@@ -1,0 +1,47 @@
+{
+  "name": "amma-radio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A vintage valve-radio web app that plays Amma's YouTube songs in sync for every listener.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "npm run export-data && vite",
+    "export-data": "tsx scripts/export-public.ts",
+    "refresh": "tsx scripts/refresh.ts",
+    "health": "tsx scripts/check-health.ts",
+    "build": "npm run export-data && tsc -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "format:check": "prettier --check ."
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-knob-headless": "^0.4.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^22.20.5",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.73.0",
+    "vite": "^6.4.6",
+    "vitest": "^3.2.7"
+  }
+}

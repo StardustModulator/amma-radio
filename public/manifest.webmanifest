@@ -1,0 +1,23 @@
+{
+  "name": "AriaAmruth Radio · ఆరియా అమృత్ రేడియో",
+  "short_name": "అమ్మ రేడియో",
+  "description": "Amma's songs on her own vintage radio.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2a1d13",
+  "theme_color": "#ff8c1a",
+  "lang": "te",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

@@ -1,0 +1,22 @@
+:root {
+  --walnut-900: #2e1a0e;
+  --walnut-800: #4a2c1a;
+  --walnut-700: #6b3f22;
+  --walnut-600: #8a5530;
+  --bakelite: #efe3c8;
+  --bakelite-dark: #d8c7a2;
+  --brass: #b08d57;
+  --brass-light: #d4b26a;
+  --amber-1: #ffb347;
+  --amber-2: #ff8c1a;
+  --needle: #c0392b;
+  --ink: #2b1d12;
+  --ink-soft: #4a3424;
+  --vu: 0;
+  --font-deco: 'Limelight', 'Georgia', serif;
+  --font-te-display: 'Ramabhadra', 'Noto Sans Telugu', sans-serif;
+  --font-te: 'Mandali', 'Noto Sans Telugu', sans-serif;
+  --font-mono: 'Courier Prime', 'Courier New', monospace;
+  --radius: 22px;
+  --focus: 0 0 0 3px var(--brass-light), 0 0 0 5px var(--ink);
+}

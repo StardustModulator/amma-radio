@@ -1,0 +1,55 @@
+{
+  "_README": "EDIT THIS FILE, then push. Anything still written as {{...}} is a placeholder and is ignored. Values marked in _TEMPORARY are working defaults Shiva should confirm with Amma.",
+  "_TEMPORARY": [
+    "stationName (AriaAmruth Radio / ఆరియా అమృత్ రేడియో) is a temporary default until Amma picks the real name",
+    "tagline.te, channel/station Telugu labels and artistName are temporary defaults"
+  ],
+  "stationName": { "en": "AriaAmruth Radio", "te": "ఆరియా అమృత్ రేడియో" },
+  "tagline": { "en": "Songs from Amma's heart, all day", "te": "అమ్మ మనసు పాటలు, రోజంతా" },
+  "artistName": "AriaAmruthSongs",
+  "siteUrl": "https://stardustmodulator.github.io/amma-radio/",
+  "timezone": "Asia/Kolkata",
+  "channels": [
+    {
+      "id": "UC6ygpyydpFHCJK_KiXRUVNQ",
+      "handle": "@ariaamruthsongs",
+      "label": { "en": "AriaAmruth Songs", "te": "ఆరియా అమృత్ పాటలు" }
+    },
+    {
+      "id": "{{CHANNEL_ID_2}}",
+      "handle": "{{CH2_HANDLE}}",
+      "label": { "en": "{{CH2_EN}}", "te": "{{CH2_TE}}" }
+    }
+  ],
+  "stations": [
+    {
+      "id": "all",
+      "freq": "88.5",
+      "label": { "en": "All Songs", "te": "అన్ని పాటలు" },
+      "channels": "*"
+    },
+    {
+      "id": "ch1",
+      "freq": "94.3",
+      "label": { "en": "AriaAmruth Songs", "te": "ఆరియా అమృత్ పాటలు" },
+      "channels": ["UC6ygpyydpFHCJK_KiXRUVNQ"]
+    },
+    {
+      "id": "ch2",
+      "freq": "101.7",
+      "label": { "en": "{{CH2_EN}}", "te": "{{CH2_TE}}" },
+      "channels": ["{{CHANNEL_ID_2}}"]
+    }
+  ],
+  "rules": {
+    "shortsMaxSeconds": 180,
+    "probeShortsUrl": true,
+    "minSeconds": 60,
+    "maxSeconds": 1200,
+    "horizonHours": 48,
+    "lockMinutes": 10,
+    "newUploadWindowDays": 7,
+    "denyVideoIds": [],
+    "allowVideoIds": []
+  }
+}
