@@ -1,44 +1,75 @@
 {
-  "_README": "EDIT THIS FILE, then push. Anything still written as {{...}} is a placeholder and is ignored. Values marked in _TEMPORARY are working defaults Shiva should confirm with Amma.",
+  "_README": "EDIT THIS FILE, then push. Anything still written as {{...}} is a placeholder and is ignored. Stations are generated automatically: SONGS and STORIES × Telugu, Hindi, English, Spanish, French (+ Stories moods). Each channel/playlist says which mode and language its videos are.",
   "_TEMPORARY": [
     "stationName (AriaAmruth Radio / ఆరియా అమృత్ రేడియో) is a temporary default until Amma picks the real name",
     "tagline.te, channel/station Telugu labels and artistName are temporary defaults"
   ],
-  "stationName": { "en": "AriaAmruth Radio", "te": "ఆరియా అమృత్ రేడియో" },
-  "tagline": { "en": "Songs from Amma's heart, all day", "te": "అమ్మ మనసు పాటలు, రోజంతా" },
+  "stationName": {
+    "en": "AriaAmruth Radio",
+    "te": "ఆరియా అమృత్ రేడియో"
+  },
+  "tagline": {
+    "en": "Songs from Amma's heart, all day",
+    "te": "అమ్మ మనసు పాటలు, రోజంతా"
+  },
   "artistName": "AriaAmruthSongs",
   "siteUrl": "https://stardustmodulator.github.io/amma-radio/",
   "timezone": "Asia/Kolkata",
+  "languages": ["te", "hi", "en", "es", "fr"],
   "channels": [
     {
       "id": "UC6ygpyydpFHCJK_KiXRUVNQ",
       "handle": "@ariaamruthsongs",
-      "label": { "en": "AriaAmruth Songs", "te": "ఆరియా అమృత్ పాటలు" }
+      "label": {
+        "en": "AriaAmruth Songs",
+        "te": "ఆరియా అమృత్ పాటలు"
+      },
+      "mode": "songs",
+      "language": "auto",
+      "defaultLanguage": "te",
+      "detectStories": true
     },
     {
       "id": "{{CHANNEL_ID_2}}",
       "handle": "{{CH2_HANDLE}}",
-      "label": { "en": "{{CH2_EN}}", "te": "{{CH2_TE}}" }
+      "label": {
+        "en": "{{CH2_EN}}",
+        "te": "{{CH2_TE}}"
+      },
+      "mode": "songs",
+      "language": "auto",
+      "defaultLanguage": "te"
     }
   ],
-  "stations": [
+  "playlists": [
     {
-      "id": "all",
-      "freq": "88.5",
-      "label": { "en": "All Songs", "te": "అన్ని పాటలు" },
-      "channels": "*"
+      "id": "{{PLAYLIST_ID_TELUGU_STORIES}}",
+      "label": {
+        "en": "Telugu Stories",
+        "te": "తెలుగు కథలు"
+      },
+      "mode": "stories",
+      "language": "te",
+      "moods": []
     },
     {
-      "id": "ch1",
-      "freq": "94.3",
-      "label": { "en": "AriaAmruth Songs", "te": "ఆరియా అమృత్ పాటలు" },
-      "channels": ["UC6ygpyydpFHCJK_KiXRUVNQ"]
+      "id": "{{PLAYLIST_ID_TELUGU_HORROR_STORIES}}",
+      "label": {
+        "en": "Telugu Horror Stories",
+        "te": "తెలుగు భయానక కథలు"
+      },
+      "mode": "stories",
+      "language": "te",
+      "moods": ["fearful"]
     },
     {
-      "id": "ch2",
-      "freq": "101.7",
-      "label": { "en": "{{CH2_EN}}", "te": "{{CH2_TE}}" },
-      "channels": ["{{CHANNEL_ID_2}}"]
+      "id": "{{PLAYLIST_ID_HINDI_SONGS}}",
+      "label": {
+        "en": "Hindi Songs",
+        "te": "హిందీ పాటలు"
+      },
+      "mode": "songs",
+      "language": "hi"
     }
   ],
   "rules": {

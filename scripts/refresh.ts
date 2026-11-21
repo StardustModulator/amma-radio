@@ -2,7 +2,8 @@
 // Safe to re-run. Network failures only log warnings and keep the previous data,
 // so the radio never goes silent because of a bad run.
 import { pathToFileURL } from 'node:url';
-import { activeChannels, activeStations } from '../src/lib/config';
+import { classifyVideo } from '../src/lib/classify';
+import { activeChannels, activePlaylists, activeStations } from '../src/lib/config';
 import { classify, type ShortsProbe } from '../src/lib/eligibility';
 import {
   buildSchedule,
@@ -15,11 +16,13 @@ import type { CatalogItem, Rules, ScheduleFile, StateFile } from '../src/lib/typ
 import { loadAll, paths, writeJson, writeScheduleFile } from './io';
 import {
   apiGetVideos,
+  apiListPlaylist,
   apiListUploads,
   defaultExec,
   oembedStatus,
   probeShort,
   rssLatest,
+  ytdlpListPlaylist,
   ytdlpListTab,
   type ApiVideo,
   type ExecLike,
@@ -45,6 +48,8 @@ export interface RefreshResult {
   added: string[];
   changed: string[];
   source: Record<string, 'api' | 'ytdlp' | 'rss-only' | 'none'>;
+  /** video id → classification summary, e.g. "songs/te" */
+  classes: Record<string, string>;
   warnings: string[];
 }
 
@@ -59,10 +64,11 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
   const log = deps.log ?? ((m: string) => console.log(m));
   const rand = deps.random ?? Math.random;
   const nowIso = new Date(deps.now).toISOString();
-  const { config, catalog, state, schedule } = loadAll(deps.root);
+  const { config, catalog, state, schedule, membership, overrides } = loadAll(deps.root);
+  const nextMembership = { ...membership };
   const rules: Rules = config.rules;
   const byId = new Map(catalog.map((c) => [c.id, c]));
-  const result: RefreshResult = { added: [], changed: [], source: {}, warnings: [] };
+  const result: RefreshResult = { added: [], changed: [], source: {}, classes: {}, warnings: [] };
   const warn = (m: string) => {
     result.warnings.push(m);
     log(`::warning::${m}`);
@@ -101,8 +107,9 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
   };
 
   const channels = activeChannels(config);
+  const playlists = activePlaylists(config);
   const stations = activeStations(config);
-  if (!channels.length)
+  if (!channels.length && !playlists.length)
     warn('No real channel IDs in config/stations.json yet; skipping discovery.');
   if (!deps.apiKey && channels.length) {
     log(
@@ -230,6 +237,89 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
     }
   }
 
+  // ------------------------------------------------------------ 2b. playlist sources
+  // Playlists sort videos into mode/language/moods (e.g. "Telugu Stories"). Membership is
+  // re-read in full every run so adding/removing a video in YouTube Studio is picked up.
+  for (const pl of playlists) {
+    result.source[pl.id] = 'none';
+    if (deps.apiKey) {
+      try {
+        const ids = await apiListPlaylist(deps.fetch, deps.apiKey, pl.id);
+        const fresh = ids.filter((id) => !byId.has(id));
+        for (const v of await apiGetVideos(deps.fetch, deps.apiKey, fresh)) {
+          await fromApi(v, v.channelId, false);
+        }
+        nextMembership[pl.id] = { ids, fetchedAt: nowIso };
+        result.source[pl.id] = 'api';
+        log(`[api] playlist ${pl.id}: ${ids.length} videos, ${fresh.length} new`);
+        continue;
+      } catch (e) {
+        warn(`YouTube Data API failed for playlist ${pl.id} (${String(e)}); trying keyless path.`);
+      }
+    }
+    let entries: TabEntry[] | null = null;
+    if (deps.useYtDlp !== false) {
+      try {
+        entries = await ytdlpListPlaylist(deps.exec, pl.id);
+      } catch (e) {
+        warn(`yt-dlp listing failed for playlist ${pl.id}: ${String(e).slice(0, 300)}`);
+      }
+    }
+    if (!entries) {
+      // RSS (latest ~15) can only add known videos to the membership.
+      try {
+        const rss = await rssLatest(deps.fetch, pl.id, 'playlist_id');
+        const prevIds = new Set(nextMembership[pl.id]?.ids ?? []);
+        for (const r of rss) if (byId.has(r.id)) prevIds.add(r.id);
+        nextMembership[pl.id] = { ids: [...prevIds], fetchedAt: nowIso };
+        result.source[pl.id] = 'rss-only';
+      } catch (e) {
+        warn(`RSS failed for playlist ${pl.id}: ${String(e)}`);
+      }
+      continue;
+    }
+    result.source[pl.id] = 'ytdlp';
+    for (const v of entries) {
+      if (byId.has(v.id) || v.durationSec === null) continue;
+      const embed = await oembedStatus(deps.fetch, v.id);
+      if (embed === 'unknown') continue;
+      let probe: ShortsProbe = 'not_short';
+      if (v.durationSec <= rules.shortsMaxSeconds && rules.probeShortsUrl) {
+        probe = await probeShort(deps.fetch, v.id);
+      }
+      const live = v.liveStatus && v.liveStatus !== 'not_live' && v.liveStatus !== 'was_live';
+      const reason = classify(
+        {
+          id: v.id,
+          durationSec: v.durationSec,
+          embeddable: embed === 'ok',
+          privacyStatus: embed === 'gone' ? 'private' : 'public',
+          liveBroadcastContent: live ? 'live' : 'none',
+        },
+        rules,
+        probe,
+      );
+      upsert({
+        id: v.id,
+        channelId: v.channelId ?? '',
+        title: v.title,
+        publishedAt: nowIso,
+        durationSec: v.durationSec,
+        thumb: thumbOf(v.id),
+        eligible: !reason,
+        ...(reason ? { reason } : {}),
+        firstSeenAt: nowIso,
+        lastCheckedAt: nowIso,
+      });
+    }
+    nextMembership[pl.id] = { ids: entries.map((e) => e.id), fetchedAt: nowIso };
+    log(`[ytdlp] playlist ${pl.id}: ${entries.length} videos`);
+  }
+  // Forget membership of playlists that were removed from the config.
+  for (const id of Object.keys(nextMembership)) {
+    if (!playlists.some((p) => p.id === id)) delete nextMembership[id];
+  }
+
   // ------------------------------------------------------------ 3. re-check soon-to-air + random sample
   const soon = new Set<string>();
   for (const st of Object.values(schedule.stations)) {
@@ -245,7 +335,7 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
   const recheck = [...new Set([...soon, ...sample])].filter(
     (id) => byId.has(id) && !checkedThisRun.has(id),
   );
-  if (recheck.length && channels.length) {
+  if (recheck.length && (channels.length || playlists.length)) {
     if (deps.apiKey) {
       try {
         const vids = await apiGetVideos(deps.fetch, deps.apiKey, recheck);
@@ -285,6 +375,19 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
     }
   }
 
+  // ------------------------------------------------------------ 3b. classify (mode / language / moods)
+  const ctx = {
+    channels: config.channels,
+    playlists,
+    membership: Object.fromEntries(Object.entries(nextMembership).map(([k, v]) => [k, v.ids])),
+    overrides,
+  };
+  for (const item of [...byId.values()]) {
+    const c = classifyVideo(item, ctx);
+    byId.set(item.id, { ...item, mode: c.mode, lang: c.lang, moods: c.moods, why: c.why });
+    result.classes[item.id] = `${c.mode}/${c.lang}${c.moods.length ? `/${c.moods.join('+')}` : ''}`;
+  }
+
   // ------------------------------------------------------------ 4. extend schedules
   const allItems = [...byId.values()].sort(
     (a, b) => b.publishedAt.localeCompare(a.publishedAt) || a.id.localeCompare(b.id),
@@ -305,7 +408,7 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
     nextSchedule.stations[st.id] = { stationId: st.id, slots: built.slots };
     nextSchedule.fallbackOrder[st.id] = fallbackOrderFor(
       st.id,
-      allItems.filter((c) => c.eligible && stationIncludes(st, c.channelId)).map((c) => c.id),
+      allItems.filter((c) => c.eligible && stationIncludes(st, c)).map((c) => c.id),
     );
     log(`[schedule] ${st.id}: ${built.slots.length} slots, cycle ${built.state.cycleIndex}`);
   }
@@ -314,7 +417,14 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
   const p = paths(deps.root);
   writeJson(p.catalog, allItems);
   writeJson(p.state, nextState);
+  writeJson(p.playlists, nextMembership);
   writeScheduleFile(p.schedule, nextSchedule);
+  const counts: Record<string, number> = {};
+  for (const c of allItems.filter((i) => i.eligible)) {
+    const k = `${c.mode}/${c.lang}`;
+    counts[k] = (counts[k] ?? 0) + 1;
+  }
+  log(`[classes] ${JSON.stringify(counts)}`);
   log(
     `[done] catalogue ${allItems.length} (${allItems.filter((c) => c.eligible).length} eligible), ` +
       `+${result.added.length} new, ${result.changed.length} changed`,

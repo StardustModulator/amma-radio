@@ -68,6 +68,28 @@ export async function apiListUploads(
   return ids;
 }
 
+/** Every video ID in a playlist (playlists are small; always a full crawl, 1 unit per 50). */
+export async function apiListPlaylist(
+  fetchFn: FetchLike,
+  key: string,
+  playlistId: string,
+): Promise<string[]> {
+  const ids: string[] = [];
+  let pageToken: string | undefined;
+  for (let page = 0; page < 100; page++) {
+    const url =
+      `${API}/playlistItems?part=contentDetails&maxResults=50&playlistId=${playlistId}` +
+      `${pageToken ? `&pageToken=${pageToken}` : ''}&key=${key}`;
+    const data = await getJson<PlaylistItemsResponse>(fetchFn, url);
+    ids.push(
+      ...(data.items ?? []).map((i) => i.contentDetails?.videoId).filter((x): x is string => !!x),
+    );
+    if (!data.nextPageToken) break;
+    pageToken = data.nextPageToken;
+  }
+  return ids;
+}
+
 export interface ApiVideo {
   id: string;
   channelId: string;
@@ -148,10 +170,14 @@ export function parseRss(xml: string): RssEntry[] {
   return entries;
 }
 
-export async function rssLatest(fetchFn: FetchLike, channelId: string): Promise<RssEntry[]> {
+export async function rssLatest(
+  fetchFn: FetchLike,
+  channelId: string,
+  kind: 'channel_id' | 'playlist_id' = 'channel_id',
+): Promise<RssEntry[]> {
   return withRetry(
     async () => {
-      const res = await fetchFn(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
+      const res = await fetchFn(`https://www.youtube.com/feeds/videos.xml?${kind}=${channelId}`);
       if (!res.ok) throw new Error(`RSS HTTP ${res.status}`);
       return parseRss(await res.text());
     },
@@ -208,6 +234,7 @@ export interface TabEntry {
   title: string;
   durationSec: number | null;
   liveStatus: string | null;
+  channelId?: string;
 }
 
 export type ExecLike = (cmd: string, args: string[]) => Promise<string>;
@@ -222,20 +249,29 @@ interface FlatPlaylist {
     title?: string;
     duration?: number | null;
     live_status?: string | null;
+    channel_id?: string | null;
   }[];
 }
 
-export async function ytdlpListTab(
+export function ytdlpListTab(
   exec: ExecLike,
   channelId: string,
   tab: 'videos' | 'shorts',
 ): Promise<TabEntry[]> {
+  return ytdlpList(exec, `https://www.youtube.com/channel/${channelId}/${tab}`);
+}
+
+export function ytdlpListPlaylist(exec: ExecLike, playlistId: string): Promise<TabEntry[]> {
+  return ytdlpList(exec, `https://www.youtube.com/playlist?list=${playlistId}`);
+}
+
+async function ytdlpList(exec: ExecLike, url: string): Promise<TabEntry[]> {
   const out = await exec(process.env.YTDLP_BIN || 'yt-dlp', [
     '--flat-playlist',
     '--dump-single-json',
     '--no-warnings',
     '--skip-download',
-    `https://www.youtube.com/channel/${channelId}/${tab}`,
+    url,
   ]);
   const data = JSON.parse(out) as FlatPlaylist;
   return (data.entries ?? [])
@@ -245,5 +281,6 @@ export async function ytdlpListTab(
       title: e.title ?? (e.id as string),
       durationSec: typeof e.duration === 'number' ? Math.round(e.duration) : null,
       liveStatus: e.live_status ?? null,
+      ...(e.channel_id ? { channelId: e.channel_id } : {}),
     }));
 }

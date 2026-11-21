@@ -1,6 +1,13 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import type { CatalogItem, ScheduleFile, StateFile, StationsConfig } from '../src/lib/types';
+import type {
+  CatalogItem,
+  ClassificationOverride,
+  PlaylistMembership,
+  ScheduleFile,
+  StateFile,
+  StationsConfig,
+} from '../src/lib/types';
 
 export const DEFAULT_EPOCH = Date.UTC(2026, 0, 1);
 
@@ -19,6 +26,8 @@ export const paths = (root: string) => ({
   catalog: join(root, 'data/catalog.json'),
   state: join(root, 'data/state.json'),
   schedule: join(root, 'data/schedule.json'),
+  playlists: join(root, 'data/playlists.json'),
+  overrides: join(root, 'config/classification-overrides.json'),
   publicDir: join(root, 'public/data'),
 });
 
@@ -35,7 +44,13 @@ export function loadAll(root: string) {
     stations: {},
     fallbackOrder: {},
   });
-  return { config, catalog, state, schedule };
+  const membership = readJson<PlaylistMembership>(p.playlists, {});
+  const rawOverrides = readJson<Record<string, ClassificationOverride | string>>(p.overrides, {});
+  const overrides: Record<string, ClassificationOverride> = {};
+  for (const [k, v] of Object.entries(rawOverrides)) {
+    if (!k.startsWith('_') && typeof v === 'object') overrides[k] = v;
+  }
+  return { config, catalog, state, schedule, membership, overrides };
 }
 
 /** One slot per line so the hourly git diffs stay tiny (history trimmed at the top, appended at the bottom). */

@@ -63,12 +63,19 @@ describe('refresh (integration, mocked network)', () => {
     expect(by.vidUPCOMING).toBeUndefined();
     expect(by.vidSHORT045).toBeUndefined();
     const sched = read<ScheduleFile>(root, 'data/schedule.json');
-    expect(Object.keys(sched.stations).sort()).toEqual(['all', 'ch1']);
-    const ids = new Set(sched.stations.all!.slots.map((s) => s.id));
+    // generated grid: songs/stories × 5 languages (+ 3 moods per stories language) = 25 stations
+    expect(Object.keys(sched.stations)).toHaveLength(25);
+    expect(sched.stations['stories-te']!.slots).toEqual([]); // nothing yet → "Coming soon"
+    const ids = new Set(sched.stations['songs-te']!.slots.map((s) => s.id));
     expect(ids).toEqual(new Set(['vidNEW00001', 'vidSONG0150']));
     exportPublic(root, NOW);
     const info = read<{ stations: { id: string }[] }>(root, 'public/data/station.json');
-    expect(info.stations.map((s) => s.id)).toEqual(['all', 'ch1']);
+    expect(info.stations.map((s) => s.id)).toContain('stories-fr-fearful');
+    const min = read<{ id: string; mode: string; lang: string }[]>(
+      root,
+      'public/data/catalog.min.json',
+    );
+    expect(min.find((m) => m.id === 'vidNEW00001')).toMatchObject({ mode: 'songs', lang: 'te' });
     expect(readFileSync(join(root, 'public/data/catalog.min.json'), 'utf8')).not.toContain(
       'vidNOEMBED1',
     );
@@ -114,7 +121,7 @@ describe('refresh (integration, mocked network)', () => {
       before.map((c) => c.id),
     );
     expect(
-      read<ScheduleFile>(root, 'data/schedule.json').stations.all!.slots.length,
+      read<ScheduleFile>(root, 'data/schedule.json').stations['songs-te']!.slots.length,
     ).toBeGreaterThan(0);
   });
 
@@ -125,5 +132,49 @@ describe('refresh (integration, mocked network)', () => {
     expect(calls).toEqual([]);
     expect(r.warnings.join(' ')).toMatch(/No real channel IDs/);
     exportPublic(root, NOW);
+  });
+
+  it('playlist sources sort videos into stories/language/mood stations', async () => {
+    const root = makeRoot();
+    const cfgPath = join(root, 'config/stations.json');
+    const cfg = JSON.parse(readFileSync(cfgPath, 'utf8'));
+    cfg.playlists = [
+      {
+        id: 'PLhorrorTE1234567',
+        label: { en: 'H', te: 'హ' },
+        mode: 'stories',
+        language: 'te',
+        moods: ['fearful'],
+      },
+      { id: '{{PLAYLIST_ID_X}}', label: { en: 'x', te: 'x' }, mode: 'songs', language: 'hi' },
+    ];
+    writeFileSync(cfgPath, JSON.stringify(cfg));
+    writeFileSync(
+      join(root, 'config/classification-overrides.json'),
+      JSON.stringify({ _README: 'x', vidSONG0150: { language: 'en' } }),
+    );
+    const { fn } = mockFetch();
+    const exec = async (_cmd: string, args: string[]) => {
+      const url = args[args.length - 1] ?? '';
+      if (url.includes('playlist?list=PLhorrorTE1234567')) {
+        return JSON.stringify({
+          entries: [{ id: 'vidSTORY001', title: 'దెయ్యం కథ', duration: 900, channel_id: CH }],
+        });
+      }
+      return url.endsWith('/shorts') ? fx('shorts-tab.json') : fx('videos-tab.json');
+    };
+    const r = await refresh({ root, now: NOW, fetch: fn, exec, log: () => {} });
+    expect(r.source.PLhorrorTE1234567).toBe('ytdlp');
+    expect(r.classes.vidSTORY001).toBe('stories/te/fearful');
+    expect(r.classes.vidSONG0150).toBe('songs/en'); // manual override
+    const sched = read<ScheduleFile>(root, 'data/schedule.json');
+    const idsOf = (st: string) => new Set(sched.stations[st]!.slots.map((s) => s.id));
+    expect(idsOf('stories-te')).toEqual(new Set(['vidSTORY001']));
+    expect(idsOf('stories-te-fearful')).toEqual(new Set(['vidSTORY001']));
+    expect(sched.stations['stories-te-emotional']!.slots).toEqual([]);
+    expect(idsOf('songs-en')).toEqual(new Set(['vidSONG0150']));
+    expect(read<Record<string, unknown>>(root, 'data/playlists.json')).toHaveProperty(
+      'PLhorrorTE1234567',
+    );
   });
 });

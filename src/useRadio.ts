@@ -3,7 +3,17 @@ import { ServerClock } from './lib/clock';
 import { setMediaHandlers, setMediaMetadata } from './lib/media-session';
 import { nowPlaying, pickFiller } from './lib/now-playing';
 import { createPlayer, SKIP_ERROR_CODES } from './lib/player';
-import type { CatalogMinItem, NowPlaying, PublicStationInfo, ScheduleFile } from './lib/types';
+import { selectStation } from './lib/stations';
+import { LANGS, MOODS } from './lib/types';
+import type {
+  CatalogMinItem,
+  LangCode,
+  Mode,
+  Mood,
+  NowPlaying,
+  PublicStationInfo,
+  ScheduleFile,
+} from './lib/types';
 
 const BASE = import.meta.env.BASE_URL;
 export const dataUrl = (f: string) => `${BASE}data/${f}`;
@@ -39,7 +49,35 @@ export async function loadRadioData(): Promise<RadioData> {
   return { info, schedule, catalog: new Map(catalog.map((c) => [c.id, c])) };
 }
 
-const LS_STATION = 'amma-radio:station';
+const LS_SEL = 'amma-radio:selection';
+
+export interface Selection {
+  mode: Mode;
+  lang: LangCode;
+  mood: Mood | 'all';
+}
+
+function loadSelection(): Selection {
+  try {
+    const v = JSON.parse(localStorage.getItem(LS_SEL) ?? '{}') as Partial<Selection>;
+    return {
+      mode: v.mode === 'stories' ? 'stories' : 'songs',
+      lang: LANGS.includes(v.lang as LangCode) ? (v.lang as LangCode) : 'te',
+      mood: MOODS.includes(v.mood as Mood) ? (v.mood as Mood) : 'all',
+    };
+  } catch {
+    return { mode: 'songs', lang: 'te', mood: 'all' };
+  }
+}
+
+/** A station with no slots and no fallback order has nothing to play yet ("Coming soon"). */
+export function stationIsEmpty(
+  schedule: ScheduleFile | undefined,
+  id: string | undefined,
+): boolean {
+  if (!schedule || !id) return true;
+  return !schedule.stations[id]?.slots.length && !schedule.fallbackOrder[id]?.length;
+}
 const LS_VOLUME = 'amma-radio:volume';
 
 function playStatic(volume: number) {
@@ -77,7 +115,7 @@ export function useRadio(
   const [data, setData] = useState<RadioData>();
   const [status, setStatus] = useState<Status>('loading');
   const [powered, setPowered] = useState(false);
-  const [stationIdx, setStationIdx] = useState(0);
+  const [sel, setSel] = useState<Selection>(loadSelection);
   const [volume, setVolumeState] = useState(() => Number(localStorage.getItem(LS_VOLUME) ?? 70));
   const [track, setTrack] = useState<Track>();
   const [tick, setTick] = useState(0);
@@ -95,7 +133,15 @@ export function useRadio(
   const adRef = useRef(false);
 
   const stations = useMemo(() => data?.info.stations ?? [], [data]);
-  const station = stations[stationIdx];
+  const station = useMemo(
+    () => selectStation(stations, sel.mode, sel.lang, sel.mood),
+    [stations, sel],
+  );
+  const empty = stationIsEmpty(data?.schedule, station?.id);
+  const langs = useMemo(() => {
+    const present = new Set(stations.map((s) => s.lang).filter(Boolean));
+    return LANGS.filter((l) => present.has(l));
+  }, [stations]);
 
   // ---- load data + clock
   useEffect(() => {
@@ -104,9 +150,6 @@ export function useRadio(
       .then((d) => {
         if (!alive) return;
         setData(d);
-        const saved = localStorage.getItem(LS_STATION);
-        const idx = d.info.stations.findIndex((s) => s.id === saved);
-        setStationIdx(idx >= 0 ? idx : 0);
         setStatus(d.info.stations.length ? 'off' : 'empty');
       })
       .catch(() => alive && setStatus('error'));
@@ -178,6 +221,17 @@ export function useRadio(
       const t = clock.now();
       const np = nowPlaying(data.schedule, station.id, t, durationOf);
       if (!np) {
+        // Empty station ("Coming soon"): silence the set but stay powered.
+        if (current.current) {
+          current.current = undefined;
+          try {
+            p.stopVideo();
+          } catch {
+            /* ignore */
+          }
+        }
+        setTrack(undefined);
+        setMediaMetadata(undefined);
         setStatus('empty');
         return;
       }
@@ -279,19 +333,28 @@ export function useRadio(
     }
   }, []);
 
-  const changeStation = useCallback(
-    (idx: number) => {
-      if (!stations.length) return;
-      const n = ((idx % stations.length) + stations.length) % stations.length;
-      setStationIdx(n);
-      const s = stations[n];
-      if (s) localStorage.setItem(LS_STATION, s.id);
-      if (poweredRef.current) {
-        playStatic(volumeRef.current);
-        setStatus('tuning');
-      }
+  const select = useCallback((patch: Partial<Selection>) => {
+    setSel((prev) => {
+      const next = { ...prev, ...patch };
+      if (next.mode === 'songs') next.mood = 'all';
+      localStorage.setItem(LS_SEL, JSON.stringify(next));
+      return next;
+    });
+    if (poweredRef.current) {
+      playStatic(volumeRef.current);
+      setStatus('tuning');
+    }
+  }, []);
+
+  /** STATION knob / media keys: step through the languages of the current mode. */
+  const stepLanguage = useCallback(
+    (delta: number) => {
+      if (!langs.length) return;
+      const i = Math.max(0, langs.indexOf(sel.lang));
+      const n = (((i + delta) % langs.length) + langs.length) % langs.length;
+      select({ lang: langs[n] as LangCode });
     },
-    [stations],
+    [langs, sel.lang, select],
   );
 
   const setVolume = useCallback(
@@ -308,10 +371,10 @@ export function useRadio(
     setMediaHandlers({
       play: () => void powerOn(),
       pause: powerOff,
-      next: () => changeStation(stationIdx + 1),
-      prev: () => changeStation(stationIdx - 1),
+      next: () => stepLanguage(1),
+      prev: () => stepLanguage(-1),
     });
-  }, [powerOn, powerOff, changeStation, stationIdx]);
+  }, [powerOn, powerOff, stepLanguage]);
 
   return {
     data,
@@ -319,13 +382,16 @@ export function useRadio(
     powered,
     stations,
     station,
-    stationIdx,
+    sel,
+    langs,
+    empty,
     volume,
     track,
     clock,
     powerOn,
     powerOff,
-    changeStation,
+    select,
+    stepLanguage,
     setVolume,
   };
 }

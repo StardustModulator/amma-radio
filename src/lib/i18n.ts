@@ -21,7 +21,7 @@ const en = {
   aboutSync:
     'Like real radio, everyone hears the same song at the same moment. New songs join automatically.',
   channels: 'YouTube channels',
-  language: 'Language',
+  language: 'Display language',
   pictureWindow: 'Picture window',
   noSongs: 'No songs on air yet. Please check back soon.',
   loading: 'Warming up the valves…',
@@ -33,6 +33,17 @@ const en = {
   increase: 'Increase',
   fallbackMode: 'Playing from memory (schedule is being refreshed)',
   mobileNote: 'Keep this page open: phones usually stop YouTube when the screen locks.',
+  songs: 'SONGS',
+  songsTagline: 'with heartful music',
+  stories: 'STORIES',
+  storiesTagline: 'emotional, fearful, heart-touching',
+  mode: 'Songs or stories',
+  contentLanguage: 'Choose language',
+  moodLabel: 'Story mood',
+  comingSoon: 'Coming soon',
+  comingSoonBody: 'Amma is preparing this station. Try another language or mode meanwhile.',
+  languageKnob: 'LANGUAGE',
+  band: 'BAND',
 } as const;
 
 export type I18nKey = keyof typeof en;
@@ -58,7 +69,7 @@ const te: Record<I18nKey, string> = {
   aboutBody: 'పాటలు యూట్యూబ్ అధికారిక ప్లేయర్ ద్వారా ప్లే అవుతాయి; అన్ని పాటలు ©',
   aboutSync: 'నిజమైన రేడియోలాగే, అందరూ ఒకే సమయంలో ఒకే పాట వింటారు. కొత్త పాటలు వాటంతట అవే చేరుతాయి.',
   channels: 'యూట్యూబ్ ఛానెల్స్',
-  language: 'భాష',
+  language: 'ప్రదర్శన భాష',
   pictureWindow: 'చిత్ర గవాక్షం',
   noSongs: 'ఇంకా పాటలు ప్రసారంలో లేవు. త్వరలో మళ్ళీ చూడండి.',
   loading: 'వాల్వులు వేడెక్కుతున్నాయి…',
@@ -70,6 +81,17 @@ const te: Record<I18nKey, string> = {
   increase: 'పెంచు',
   fallbackMode: 'జ్ఞాపకం నుండి ప్లే అవుతోంది (షెడ్యూల్ నవీకరించబడుతోంది)',
   mobileNote: 'ఈ పేజీని తెరిచే ఉంచండి: స్క్రీన్ లాక్ అయితే ఫోన్లలో యూట్యూబ్ ఆగిపోతుంది.',
+  songs: 'పాటలు',
+  songsTagline: 'హృదయపూర్వక సంగీతంతో',
+  stories: 'కథలు',
+  storiesTagline: 'భావోద్వేగ, భయానక, హృదయాన్ని తాకే',
+  mode: 'పాటలు లేదా కథలు',
+  contentLanguage: 'భాష ఎంచుకోండి',
+  moodLabel: 'కథ రకం',
+  comingSoon: 'త్వరలో',
+  comingSoonBody: 'అమ్మ ఈ స్టేషన్‌ను సిద్ధం చేస్తున్నారు. ఈలోగా మరో భాష లేదా విభాగం ప్రయత్నించండి.',
+  languageKnob: 'భాష',
+  band: 'బ్యాండ్',
 };
 
 export const dictionaries: Record<Lang, Record<I18nKey, string>> = { en, te };

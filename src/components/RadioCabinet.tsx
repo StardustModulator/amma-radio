@@ -10,6 +10,11 @@ import { PictureWindow } from './PictureWindow';
 import { PowerSwitch } from './PowerSwitch';
 import { TuningDial } from './TuningDial';
 import { VuMeter } from './VuMeter';
+import { ModeSwitch } from './ModeSwitch';
+import { PushButtonRow } from './PushButtonRow';
+import { LANG_NATIVE, MOOD_LABEL, selectStation } from '../lib/stations';
+import { stationIsEmpty } from '../useRadio';
+import { MOODS, type LangCode, type Mood, type StationConfig } from '../lib/types';
 
 const LS_LANG = 'amma-radio:lang';
 
@@ -88,6 +93,26 @@ export function RadioCabinet() {
     ? `${tr('te', 'nowPlaying')} · ${tr('en', 'nowPlaying')}: ${title}${nextTitle ? `  ·  ${tr('te', 'next')} / ${tr('en', 'next')}: ${nextTitle}` : ''}`
     : `${name.te} · ${name.en} — ${info?.tagline[lang] ?? ''}`;
 
+  const sched = r.data?.schedule;
+  const dialStations: StationConfig[] = r.stations
+    .filter((s) => s.mode === r.sel.mode && !s.mood)
+    .map((s) =>
+      s.lang ? { ...s, label: { te: LANG_NATIVE[s.lang], en: LANG_NATIVE[s.lang] } } : s,
+    );
+  const langOptions = r.langs.map((l) => ({
+    id: l,
+    label: LANG_NATIVE[l],
+    lang: l,
+    empty: stationIsEmpty(sched, selectStation(r.stations, r.sel.mode, l)?.id),
+  }));
+  const moodOptions = (['all', ...MOODS] as const).map((m) => ({
+    id: m,
+    label: MOOD_LABEL[m].te,
+    sub: MOOD_LABEL[m].en,
+    lang: 'te',
+    empty: stationIsEmpty(sched, selectStation(r.stations, 'stories', r.sel.lang, m)?.id),
+  }));
+
   let statusLine = '';
   if (r.status === 'loading') statusLine = L('loading');
   else if (r.status === 'empty') statusLine = L('noSongs');
@@ -120,8 +145,36 @@ export function RadioCabinet() {
 
         <div className="cabinet__face">
           <section className="cabinet__left">
-            <TuningDial stations={r.stations} currentFreq={freq} powered={r.powered} lang={lang}>
-              {!r.powered ? (
+            <ModeSwitch
+              mode={r.sel.mode}
+              onChange={(mode) => r.select({ mode })}
+              groupLabel={L('mode')}
+              labels={{
+                songs: {
+                  te: tr('te', 'songs'),
+                  en: tr('en', 'songs'),
+                  tagTe: tr('te', 'songsTagline'),
+                  tagEn: tr('en', 'songsTagline'),
+                },
+                stories: {
+                  te: tr('te', 'stories'),
+                  en: tr('en', 'stories'),
+                  tagTe: tr('te', 'storiesTagline'),
+                  tagEn: tr('en', 'storiesTagline'),
+                },
+              }}
+            />
+            <TuningDial stations={dialStations} currentFreq={freq} powered={r.powered} lang={lang}>
+              {r.empty && r.status !== 'loading' ? (
+                <div className="soon" data-testid="coming-soon" aria-live="polite">
+                  <p className="soon__title">
+                    <span lang="te">{tr('te', 'comingSoon')}</span> ·{' '}
+                    <span lang="en">{tr('en', 'comingSoon')}</span>
+                  </p>
+                  <p className="soon__station">{r.station?.label[lang]}</p>
+                  <p className="soon__body">{L('comingSoonBody')}</p>
+                </div>
+              ) : !r.powered ? (
                 <button
                   type="button"
                   className="dial__hint"
@@ -148,13 +201,30 @@ export function RadioCabinet() {
                 </div>
               )}
             </TuningDial>
+            <PushButtonRow
+              options={langOptions}
+              value={r.sel.lang}
+              onChange={(id) => r.select({ lang: id as LangCode })}
+              groupLabel={L('contentLanguage')}
+              testId="lang-row"
+            />
+            {r.sel.mode === 'stories' ? (
+              <PushButtonRow
+                options={moodOptions}
+                value={r.sel.mood}
+                onChange={(id) => r.select({ mood: id as Mood | 'all' })}
+                groupLabel={L('moodLabel')}
+                small
+                testId="mood-row"
+              />
+            ) : null}
             <Marquee text={marquee} />
-            {statusLine && r.powered ? (
+            {statusLine && r.powered && r.status !== 'empty' ? (
               <p className="status" role="status">
                 {statusLine}
               </p>
             ) : null}
-            {!r.powered && (r.status === 'empty' || r.status === 'error') ? (
+            {!r.powered && r.status === 'error' ? (
               <p className="status" role="status">
                 {statusLine}
               </p>
@@ -198,19 +268,22 @@ export function RadioCabinet() {
                 increaseLabel={L('increase')}
               />
               <Knob
-                labelTe={tr('te', 'station')}
-                labelEn={tr('en', 'station')}
-                ariaLabel={L('station')}
-                value={r.stationIdx}
+                labelTe={tr('te', 'languageKnob')}
+                labelEn={tr('en', 'languageKnob')}
+                ariaLabel={L('languageKnob')}
+                value={Math.max(0, r.langs.indexOf(r.sel.lang))}
                 min={0}
-                max={Math.max(0, r.stations.length - 1)}
+                max={Math.max(0, r.langs.length - 1)}
                 step={1}
                 detents
                 valueText={(v) => {
-                  const s = r.stations[Math.round(v)];
-                  return s ? `${L('stationValue')} ${s.freq} ${s.label[lang]}` : L('stationValue');
+                  const l = r.langs[Math.round(v)];
+                  return l ? `${r.station?.freq ?? ''} ${LANG_NATIVE[l]}` : L('stationValue');
                 }}
-                onChange={r.changeStation}
+                onChange={(v) => {
+                  const l = r.langs[v];
+                  if (l) r.select({ lang: l });
+                }}
                 decreaseLabel={L('decrease')}
                 increaseLabel={L('increase')}
               />

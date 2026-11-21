@@ -57,7 +57,7 @@ test('loads, powers on, plays in a visible ≥200×200 picture window', async ({
   expect(loads.length).toBeGreaterThan(0);
 
   // needle sits at the current station frequency (default: first station, 88.5)
-  await expect(page.getByTestId('needle')).toHaveAttribute('data-freq', '88.5');
+  await expect(page.getByTestId('needle')).toHaveAttribute('data-freq', '88.6');
 
   // player window: ≥200×200 and nothing covers its centre
   const win = page.getByTestId('picture-window');
@@ -71,12 +71,15 @@ test('loads, powers on, plays in a visible ≥200×200 picture window', async ({
   expect(topIsIframe).toBe('IFRAME');
 
   // switch station with the keyboard → needle moves
-  await page.getByRole('slider', { name: /స్టేషన్|STATION/ }).focus();
+  await page.getByRole('slider', { name: /భాష|LANGUAGE/ }).focus();
   await page.keyboard.press('ArrowRight');
-  await expect(page.getByTestId('needle')).toHaveAttribute('data-freq', '94.3');
+  await expect(page.getByTestId('needle')).toHaveAttribute('data-freq', '93.2');
 
   // English toggle
-  await page.getByRole('button', { name: 'English' }).click();
+  await page
+    .getByRole('group', { name: /ప్రదర్శన భాష|Display language/ })
+    .getByRole('button', { name: 'English' })
+    .click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
 });
 
@@ -87,4 +90,34 @@ test('usable at 360px wide', async ({ page }) => {
     () => document.documentElement.scrollWidth - window.innerWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test('SONGS/STORIES keys, language push-buttons and "Coming soon" stations', async ({ page }) => {
+  await page.goto('./');
+  await expect(page.getByTestId('mode-songs')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByTestId('power').click();
+  await expect(page.getByTestId('onair')).toHaveAttribute('data-on', 'true');
+
+  // Hindi songs exist → plays
+  await page.getByTestId('lang-row').getByRole('button', { name: 'हिन्दी' }).click();
+  await expect(page.getByTestId('needle')).toHaveAttribute('data-freq', '93.2');
+  await expect(page.getByTestId('now-title')).toContainText(/Hindi|हिन्दी|ह/);
+
+  // French songs: nothing yet → Coming soon, lamp off, nothing breaks
+  await page.getByTestId('lang-row').getByRole('button', { name: 'Français' }).click();
+  await expect(page.getByTestId('coming-soon')).toBeVisible();
+  await expect(page.getByTestId('onair')).toHaveAttribute('data-on', 'false');
+
+  // Stories → mood row appears; Telugu horror stories are coming soon too
+  await page.getByTestId('mode-stories').click();
+  await page.getByTestId('lang-row').getByRole('button', { name: 'తెలుగు' }).click();
+  await expect(page.getByTestId('mood-row')).toBeVisible();
+  await page.getByTestId('mood-row').getByRole('button', { name: /భయానక/ }).click();
+  await expect(page.getByTestId('coming-soon')).toContainText('త్వరలో');
+
+  // Back to Telugu songs → plays again
+  await page.getByTestId('mode-songs').click();
+  await expect(page.getByTestId('mood-row')).toHaveCount(0);
+  await expect(page.getByTestId('coming-soon')).toHaveCount(0);
+  await expect(page.getByTestId('onair')).toHaveAttribute('data-on', 'true');
 });

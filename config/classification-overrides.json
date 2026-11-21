@@ -1,0 +1,9 @@
+{
+  "_README": "Manual corrections for the automatic sorting. Key = YouTube video ID. Any of: mode (songs|stories), language (te|hi|en|es|fr), moods ([emotional, fearful, heart-touching]), note. Example: \"yFLyRXI2z2k\": { \"language\": \"en\" }. Overrides beat playlists and title detection.",
+  "_example_dQw4w9WgXcQ": {
+    "mode": "stories",
+    "language": "te",
+    "moods": ["emotional"],
+    "note": "keys starting with _ are ignored"
+  }
+}
