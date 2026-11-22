@@ -6,35 +6,35 @@ interface Props {
   onToggle: () => void;
 }
 
+/** The big POWER push-button on the top rail of the cabinet, with its pilot light. */
 export function PowerSwitch({ on, labelTe, labelEn, ariaLabel, onToggle }: Props) {
   return (
-    <div className="knob">
-      <div className="knob__row">
-        <button
-          type="button"
-          className={`power ${on ? 'power--on' : ''}`}
-          aria-pressed={on}
-          aria-label={ariaLabel}
-          onClick={onToggle}
-          data-testid="power"
-        >
-          <span className="knob__cap power__cap" aria-hidden="true">
-            <span className="knob__pointer" />
-          </span>
-          <span className="power__marks" aria-hidden="true">
-            <span>OFF</span>
-            <span>ON</span>
-          </span>
-        </button>
-      </div>
-      <div className="knob__label" aria-hidden="true">
-        <span lang="te" className="knob__label-te">
+    <button
+      type="button"
+      className={`power ${on ? 'power--on' : ''}`}
+      aria-pressed={on}
+      aria-label={ariaLabel}
+      onClick={onToggle}
+      data-testid="power"
+    >
+      <span className="power__btn" aria-hidden="true">
+        <svg viewBox="0 0 24 24" className="power__icon">
+          <path d="M12 3v8" />
+          <path d="M6.3 6.8a8 8 0 1 0 11.4 0" />
+        </svg>
+      </span>
+      <span className="power__text" aria-hidden="true">
+        <span lang="te" className="power__te">
           {labelTe}
         </span>
-        <span lang="en" className="knob__label-en">
+        <span lang="en" className="power__en">
           {labelEn}
         </span>
-      </div>
-    </div>
+        <span className="power__state">
+          <span className="power__pilot" />
+          {on ? 'ON' : 'OFF'}
+        </span>
+      </span>
+    </button>
   );
 }

@@ -95,6 +95,9 @@ export function classifyVideo(v: ClassifyInput, ctx: ClassifyContext): Classific
   if (ov?.mode) {
     mode = ov.mode;
     why.push('mode: override');
+  } else if (channel?.lockMode && channel.mode) {
+    mode = channel.mode;
+    why.push('mode: channel (locked)');
   } else if (playlist) {
     mode = playlist.mode;
     why.push(`mode: playlist ${playlist.id}`);
@@ -111,13 +114,16 @@ export function classifyVideo(v: ClassifyInput, ctx: ClassifyContext): Classific
   if (ov?.language) {
     lang = ov.language;
     why.push('lang: override');
+  } else if (channel?.lockMode && channel.language && channel.language !== 'auto') {
+    lang = channel.language;
+    why.push('lang: channel (locked)');
   } else if (playlist && playlist.language !== 'auto') {
     lang = playlist.language;
     why.push(`lang: playlist ${playlist.id}`);
   } else if (channel?.language && channel.language !== 'auto') {
     lang = channel.language;
     why.push('lang: channel setting');
-  } else if (titleLang) {
+  } else if (titleLang && (!channel?.languages || channel.languages.includes(titleLang.lang))) {
     lang = titleLang.lang;
     why.push(`lang: ${titleLang.why}`);
   } else {

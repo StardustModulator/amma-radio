@@ -84,6 +84,20 @@ export interface ChannelConfig {
   defaultLanguage?: LangCode;
   /** Treat uploads whose titles say story/కథ/कहानी… as Stories (default: true). */
   detectStories?: boolean;
+  /**
+   * Every upload of this channel is `mode` — playlists and title clues cannot move it to the
+   * other mode (a per-video override in classification-overrides.json still can).
+   */
+  lockMode?: boolean;
+  /** With language "auto": only these languages may be detected; anything else → defaultLanguage. */
+  languages?: LangCode[];
+  /**
+   * Stations of this channel's mode in these languages play this channel's uploads
+   * (all languages) while they have nothing of their own, instead of "Coming soon".
+   */
+  fallbackFor?: LangCode[];
+  /** Per-channel length limits (e.g. long stories), overriding rules.minSeconds/maxSeconds. */
+  rules?: Partial<Pick<Rules, 'minSeconds' | 'maxSeconds'>>;
 }
 
 /** A YouTube playlist used as a source. Everything in it gets this mode/language/moods. */

@@ -3,7 +3,8 @@ import { ServerClock } from './lib/clock';
 import { setMediaHandlers, setMediaMetadata } from './lib/media-session';
 import { nowPlaying, pickFiller } from './lib/now-playing';
 import { createPlayer, SKIP_ERROR_CODES } from './lib/player';
-import { selectStation } from './lib/stations';
+import { dialOrder, selectStation, stepStation as nextOnDial } from './lib/stations';
+import { playTuningStatic, stopTuningStatic } from './lib/tuning-static';
 import { LANGS, MOODS } from './lib/types';
 import type {
   CatalogMinItem,
@@ -80,14 +81,12 @@ export function stationIsEmpty(
 }
 const LS_VOLUME = 'amma-radio:volume';
 
-function playStatic(volume: number) {
-  try {
-    const a = new Audio(`${BASE}sounds/static.mp3`);
-    a.volume = Math.min(1, 0.25 * (volume / 100));
-    void a.play().catch(() => {});
-  } catch {
-    /* ignore */
-  }
+let lastStaticAt = 0;
+/** Tuning static (WebAudio); follows volume, silent when off; at most one burst per 700 ms. */
+function playStatic(volume: number, powered: boolean) {
+  const t = Date.now();
+  if (t - lastStaticAt < 700) return;
+  if (playTuningStatic(volume, powered)) lastStaticAt = t;
 }
 
 /** Wait until at least half of `el` is in the viewport (YouTube RMF rule). */
@@ -251,7 +250,7 @@ export function useRadio(
           }
         }
         p.loadVideoById({ videoId: id, startSeconds: Math.max(0, start) });
-        if (cur?.key) playStatic(volumeRef.current);
+        if (cur?.key) playStatic(volumeRef.current, poweredRef.current);
         current.current = { key, id, filler };
         adRef.current = false;
         const item = data.catalog.get(id);
@@ -305,7 +304,7 @@ export function useRadio(
     if (poweredRef.current) return;
     poweredRef.current = true;
     setStatus('warming');
-    playStatic(volumeRef.current);
+    playStatic(volumeRef.current, true);
     if (windowRef.current) await whenHalfVisible(windowRef.current);
     fadeRef.current = 0;
     current.current = undefined;
@@ -321,6 +320,7 @@ export function useRadio(
 
   const powerOff = useCallback(() => {
     poweredRef.current = false;
+    stopTuningStatic();
     setPowered(false);
     current.current = undefined;
     setTrack(undefined);
@@ -333,6 +333,9 @@ export function useRadio(
     }
   }, []);
 
+  /** Bumped on every station change: drives the dial's needle sweep / static flicker. */
+  const [tuneFx, setTuneFx] = useState(0);
+
   const select = useCallback((patch: Partial<Selection>) => {
     setSel((prev) => {
       const next = { ...prev, ...patch };
@@ -340,13 +343,37 @@ export function useRadio(
       localStorage.setItem(LS_SEL, JSON.stringify(next));
       return next;
     });
-    if (poweredRef.current) {
-      playStatic(volumeRef.current);
-      setStatus('tuning');
-    }
+    setTuneFx((x) => x + 1);
+    playStatic(volumeRef.current, poweredRef.current);
+    if (poweredRef.current) setStatus('tuning');
   }, []);
 
-  /** STATION knob / media keys: step through the languages of the current mode. */
+  /** Every mode × language station, in dial (frequency) order. */
+  const dial = useMemo(() => dialOrder(stations), [stations]);
+
+  /** Tune straight to a station (dial marker click, TUNING knob). */
+  const tuneTo = useCallback(
+    (id: string) => {
+      const st = stations.find((s) => s.id === id);
+      if (!st?.mode || !st.lang) return;
+      select({ mode: st.mode, lang: st.lang, mood: st.mood ?? 'all' });
+    },
+    [stations, select],
+  );
+
+  /** ◀ ▶ buttons, arrow keys, media keys: next/previous station across both bands. */
+  const stepStation = useCallback(
+    (delta: number) => {
+      const curMain = dial.find((s) => s.mode === sel.mode && s.lang === sel.lang);
+      const target = nextOnDial(dial, curMain?.id, delta, (id) =>
+        stationIsEmpty(data?.schedule, id),
+      );
+      if (target) tuneTo(target.id);
+    },
+    [dial, sel.mode, sel.lang, data, tuneTo],
+  );
+
+  /** LANGUAGE stepping within the current mode (kept for the language push-buttons' order). */
   const stepLanguage = useCallback(
     (delta: number) => {
       if (!langs.length) return;
@@ -371,10 +398,10 @@ export function useRadio(
     setMediaHandlers({
       play: () => void powerOn(),
       pause: powerOff,
-      next: () => stepLanguage(1),
-      prev: () => stepLanguage(-1),
+      next: () => stepStation(1),
+      prev: () => stepStation(-1),
     });
-  }, [powerOn, powerOff, stepLanguage]);
+  }, [powerOn, powerOff, stepStation]);
 
   return {
     data,
@@ -392,6 +419,10 @@ export function useRadio(
     powerOff,
     select,
     stepLanguage,
+    dial,
+    tuneTo,
+    stepStation,
+    tuneFx,
     setVolume,
   };
 }

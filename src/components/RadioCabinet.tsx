@@ -8,13 +8,13 @@ import { Marquee } from './Marquee';
 import { OnAirLamp } from './OnAirLamp';
 import { PictureWindow } from './PictureWindow';
 import { PowerSwitch } from './PowerSwitch';
-import { TuningDial } from './TuningDial';
+import { TuningDial, type Band } from './TuningDial';
 import { VuMeter } from './VuMeter';
 import { ModeSwitch } from './ModeSwitch';
 import { PushButtonRow } from './PushButtonRow';
-import { LANG_NATIVE, MOOD_LABEL, selectStation } from '../lib/stations';
+import { LANG_NATIVE, MOOD_LABEL, mainStationOf, selectStation } from '../lib/stations';
 import { stationIsEmpty } from '../useRadio';
-import { MOODS, type LangCode, type Mood, type StationConfig } from '../lib/types';
+import { MOODS, type LangCode, type Mood } from '../lib/types';
 
 const LS_LANG = 'amma-radio:lang';
 
@@ -81,6 +81,13 @@ export function RadioCabinet() {
     : undefined;
   const title = track?.item?.title ?? '';
   const nextTitle = track?.nextItem?.title ?? '';
+  // es/fr Stories borrow the English stories channel until they have their own videos.
+  const borrowed = !!(
+    track?.item?.lang &&
+    r.station?.lang &&
+    !r.station.mood &&
+    track.item.lang !== r.station.lang
+  );
   const left = track ? Math.max(0, (track.np.endsAt - r.clock.now()) / 1000) : 0;
   const playing =
     r.powered && (r.status === 'playing' || r.status === 'ad' || r.status === 'tuning');
@@ -94,11 +101,46 @@ export function RadioCabinet() {
     : `${name.te} · ${name.en} — ${info?.tagline[lang] ?? ''}`;
 
   const sched = r.data?.schedule;
-  const dialStations: StationConfig[] = r.stations
-    .filter((s) => s.mode === r.sel.mode && !s.mood)
-    .map((s) =>
-      s.lang ? { ...s, label: { te: LANG_NATIVE[s.lang], en: LANG_NATIVE[s.lang] } } : s,
-    );
+  const mainStation = mainStationOf(r.stations, r.station);
+  const dialIndex = Math.max(
+    0,
+    r.dial.findIndex((s) => s.id === mainStation?.id),
+  );
+  const isEmpty = (id: string) => stationIsEmpty(sched, id);
+  const bands: Band[] = (['songs', 'stories'] as const).map((m) => {
+    const fs = r.dial.filter((s) => s.mode === m).map((s) => Number(s.freq));
+    return {
+      id: m,
+      from: fs.length ? Math.min(...fs) - 0.6 : 88,
+      to: fs.length ? Math.max(...fs) + 0.6 : 88,
+      te: tr('te', m),
+      en: tr('en', m),
+    };
+  });
+  const readout = {
+    freq: r.station?.freq ?? '--.-',
+    band: `${tr('te', r.sel.mode)} · ${tr('en', r.sel.mode)}`,
+    name: r.station?.label[lang] ?? '',
+    sub: r.station?.lang ? LANG_NATIVE[r.station.lang] : undefined,
+  };
+
+  // ← / → anywhere on the page change station (knobs/sliders keep their own arrows).
+  const stepRef = useRef(r.stepStation);
+  stepRef.current = r.stepStation;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      const el = e.target as HTMLElement | null;
+      if (el?.closest('input, textarea, select, [role="slider"], [contenteditable="true"], dialog'))
+        return;
+      e.preventDefault();
+      stepRef.current(e.key === 'ArrowRight' ? 1 : -1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const langOptions = r.langs.map((l) => ({
     id: l,
     label: LANG_NATIVE[l],
@@ -127,6 +169,19 @@ export function RadioCabinet() {
     >
       <main className="cabinet" aria-label={`${name.te} ${name.en}`}>
         <header className="cabinet__top">
+          <div className="cabinet__rail">
+            <PowerSwitch
+              on={r.powered}
+              labelTe={tr('te', 'power')}
+              labelEn={tr('en', 'power')}
+              ariaLabel={r.powered ? L('powerOffLabel') : L('powerOnLabel')}
+              onToggle={() => (r.powered ? r.powerOff() : void r.powerOn())}
+            />
+            <OnAirLamp
+              on={playing}
+              text={playing ? `${tr('te', 'onAir')} · ${tr('en', 'onAir')}` : `${L('offAir')}`}
+            />
+          </div>
           <div className="nameplate">
             <h1>
               <span className="nameplate__te" lang="te">
@@ -137,10 +192,6 @@ export function RadioCabinet() {
               </span>
             </h1>
           </div>
-          <OnAirLamp
-            on={playing}
-            text={playing ? `${tr('te', 'onAir')} · ${tr('en', 'onAir')}` : `${L('offAir')}`}
-          />
         </header>
 
         <div className="cabinet__face">
@@ -164,7 +215,21 @@ export function RadioCabinet() {
                 },
               }}
             />
-            <TuningDial stations={dialStations} currentFreq={freq} powered={r.powered} lang={lang}>
+            <TuningDial
+              stations={r.dial}
+              currentId={mainStation?.id}
+              currentFreq={freq}
+              powered={r.powered}
+              lang={lang}
+              bands={bands}
+              readout={readout}
+              tuneFx={r.tuneFx}
+              isEmpty={isEmpty}
+              onTune={r.tuneTo}
+              onStep={r.stepStation}
+              prevLabel={L('prevStation')}
+              nextLabel={L('nextStation')}
+            >
               {r.empty && r.status !== 'loading' ? (
                 <div className="soon" data-testid="coming-soon" aria-live="polite">
                   <p className="soon__title">
@@ -230,6 +295,11 @@ export function RadioCabinet() {
               </p>
             ) : null}
             {r.powered && track?.np.fallback ? <p className="status">{L('fallbackMode')}</p> : null}
+            {r.powered && borrowed ? (
+              <p className="status" data-testid="borrowed-note">
+                {L('fallbackStation')}
+              </p>
+            ) : null}
 
             <PictureWindow
               ref={windowRef}
@@ -268,31 +338,24 @@ export function RadioCabinet() {
                 increaseLabel={L('increase')}
               />
               <Knob
-                labelTe={tr('te', 'languageKnob')}
-                labelEn={tr('en', 'languageKnob')}
-                ariaLabel={L('languageKnob')}
-                value={Math.max(0, r.langs.indexOf(r.sel.lang))}
+                labelTe={tr('te', 'tuningKnob')}
+                labelEn={tr('en', 'tuningKnob')}
+                ariaLabel={L('tuningKnob')}
+                value={dialIndex}
                 min={0}
-                max={Math.max(0, r.langs.length - 1)}
+                max={Math.max(0, r.dial.length - 1)}
                 step={1}
                 detents
                 valueText={(v) => {
-                  const l = r.langs[Math.round(v)];
-                  return l ? `${r.station?.freq ?? ''} ${LANG_NATIVE[l]}` : L('stationValue');
+                  const st = r.dial[Math.round(v)];
+                  return st ? `${st.freq} MHz ${st.label[lang]}` : L('stationValue');
                 }}
                 onChange={(v) => {
-                  const l = r.langs[v];
-                  if (l) r.select({ lang: l });
+                  const st = r.dial[v];
+                  if (st) r.tuneTo(st.id);
                 }}
                 decreaseLabel={L('decrease')}
                 increaseLabel={L('increase')}
-              />
-              <PowerSwitch
-                on={r.powered}
-                labelTe={tr('te', 'power')}
-                labelEn={tr('en', 'power')}
-                ariaLabel={r.powered ? L('powerOffLabel') : L('powerOnLabel')}
-                onToggle={() => (r.powered ? r.powerOff() : void r.powerOn())}
               />
             </div>
           </section>

@@ -63,13 +63,29 @@ a {
   filter: brightness(0.82);
 }
 
-/* top rail */
+/* top rail: POWER + ON AIR sit above the nameplate so they are the first thing you see */
 .cabinet__top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.cabinet__rail {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #3a2416, var(--walnut-900));
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.6),
+    0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.cabinet__rail .lamp {
+  flex-direction: row;
+  gap: 8px;
+  min-width: 0;
 }
 .nameplate {
   flex: 1;
@@ -210,11 +226,11 @@ a {
 }
 .dial__scale {
   position: relative;
-  height: 112px;
+  height: 124px;
 }
 .dial__svg {
   position: absolute;
-  inset: 0 0 auto 0;
+  inset: 14px 0 auto 0;
   width: 100%;
   height: 64px;
 }
@@ -239,7 +255,7 @@ a {
   position: absolute;
   left: 3.33%;
   right: 3.33%;
-  top: 62px;
+  top: 76px;
   height: 46px;
 }
 .dial__station {
@@ -248,24 +264,207 @@ a {
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 0.72rem;
+  min-width: 26px;
+  min-height: 40px;
+  padding: 2px 2px 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.74rem;
   line-height: 1.15;
   white-space: nowrap;
-  max-width: 34%;
   color: var(--ink);
+  cursor: pointer;
 }
 .dial__station b {
   font-family: var(--font-mono);
+  font-size: 0.66rem;
 }
 .dial__station span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+  font-weight: 700;
+}
+.dial__station--stories span {
+  color: #5a1f12;
+}
+.dial__station--empty {
+  opacity: 0.45;
 }
 .dial__station--active {
-  font-weight: 700;
+  background: rgba(43, 29, 18, 0.14);
   text-decoration: underline;
   text-decoration-thickness: 2px;
+  opacity: 1;
+}
+@media (max-width: 560px) {
+  .dial__station b {
+    display: none;
+  }
+  .dial__station {
+    justify-content: center;
+  }
+}
+.dial__bands {
+  position: absolute;
+  left: 3.33%;
+  right: 3.33%;
+  top: -2px;
+  height: 14px;
+  pointer-events: none;
+}
+.dial__bandcap {
+  position: absolute;
+  top: 0;
+  height: 12px;
+  border-top: 2px solid var(--ink-soft);
+  border-left: 2px solid var(--ink-soft);
+  border-right: 2px solid var(--ink-soft);
+  border-radius: 6px 6px 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  line-height: 0;
+  text-align: center;
+  letter-spacing: 0.08em;
+}
+.dial__bandcap > span {
+  background: #f7b04f;
+  padding: 0 3px;
+  position: relative;
+  top: -1px;
+}
+.dial__bandcap span[lang='te'] {
+  font-family: var(--font-te-display);
+  letter-spacing: 0;
+}
+.dial__head {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  align-items: stretch;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dial__step {
+  min-height: 48px;
+  border: 2px solid var(--brass);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #5a3a24, #2b1a10);
+  color: var(--amber-1);
+  font-size: 1.3rem;
+  cursor: pointer;
+  box-shadow: 0 3px 0 #1b0f07;
+}
+.dial__step:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #1b0f07;
+}
+.dial__readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  column-gap: 10px;
+  row-gap: 0;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #1d130b;
+  color: #ffb347;
+  text-align: center;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 0 6px rgba(255, 150, 40, 0.75);
+}
+.dial__mhz {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+.dial__mhz b {
+  font-size: 1.45rem;
+  letter-spacing: 0.04em;
+}
+.dial__band {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  opacity: 0.85;
+}
+.dial__name {
+  flex-basis: 100%;
+  font-family: var(--font-te-display);
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dial__name[lang='en'] {
+  font-family: var(--font-deco);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+}
+.dial__sub {
+  display: none;
+}
+.dial:not(.dial--on) .dial__readout {
+  color: #7a5a3a;
+  text-shadow: none;
+}
+.dial__noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  border-radius: 6px;
+  background:
+    repeating-linear-gradient(0deg, rgba(43, 29, 18, 0.18) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.22) 0 2px, transparent 2px 5px);
+  mix-blend-mode: multiply;
+}
+.dial--tuning .dial__noise {
+  animation: dial-static 0.75s steps(10) both;
+}
+.dial--tuning .dial__readout {
+  animation: readout-flicker 0.75s steps(6) both;
+}
+.dial--tuning .dial__needle {
+  box-shadow: 0 0 12px 3px rgba(192, 57, 43, 0.9);
+}
+@keyframes dial-static {
+  0% {
+    opacity: 0.9;
+    background-position:
+      0 0,
+      0 0;
+  }
+  50% {
+    opacity: 0.7;
+    background-position:
+      0 7px,
+      13px 0;
+  }
+  100% {
+    opacity: 0;
+    background-position:
+      0 2px,
+      -9px 0;
+  }
+}
+@keyframes readout-flicker {
+  0%,
+  40% {
+    opacity: 0.35;
+    filter: blur(1px);
+  }
+  20%,
+  60% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 1;
+    filter: none;
+  }
+}
+.reduced-motion .dial--tuning .dial__noise,
+.reduced-motion .dial--tuning .dial__readout {
+  animation: none;
 }
 .dial__needle-track {
   position: absolute;
@@ -537,7 +736,7 @@ a {
 /* knobs */
 .controls {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 6px;
 }
 .knob {
@@ -610,33 +809,92 @@ a {
   letter-spacing: 0.08em;
 }
 .power {
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 4px 14px 4px 4px;
+  border: 2px solid var(--brass);
+  border-radius: 999px;
+  background: linear-gradient(180deg, #5a3a24, #2b1a10);
+  color: var(--bakelite);
+  cursor: pointer;
+  box-shadow:
+    0 3px 0 #1b0f07,
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition:
+    transform 80ms,
+    box-shadow 80ms;
+}
+.power:active {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 #1b0f07,
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+.power__btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f6ead0, var(--bakelite-dark) 60%, #a8946b);
+  box-shadow:
+    inset 0 -3px 5px rgba(0, 0, 0, 0.35),
+    0 0 0 3px #8d6c3c;
+  transition: background 0.3s;
+}
+.power--on .power__btn {
+  background: radial-gradient(circle at 35% 30%, #ffd9a8, #ff8a3d 55%, #c0451b);
+  box-shadow:
+    inset 0 -3px 5px rgba(0, 0, 0, 0.3),
+    0 0 0 3px var(--brass-light),
+    0 0 16px 4px rgba(255, 120, 40, 0.6);
+}
+.power__icon {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: var(--needle);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+.power--on .power__icon {
+  stroke: #fff6e6;
+}
+.power__text {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  border: 0;
-  background: transparent;
-  padding: 0 4px;
-  cursor: pointer;
-  border-radius: 50%;
+  align-items: flex-start;
+  line-height: 1.1;
 }
-.power__cap {
-  transform: rotate(-40deg);
+.power__te {
+  font-family: var(--font-te-display);
+  font-size: 1rem;
 }
-.power--on .power__cap {
-  transform: rotate(40deg);
+.power__en {
+  font-family: var(--font-deco);
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
 }
-.power__marks {
+.power__state {
   display: flex;
-  justify-content: space-between;
-  width: 66px;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-mono);
-  font-size: 0.62rem;
-  color: var(--ink);
-}
-.power--on .power__marks span:last-child,
-.power:not(.power--on) .power__marks span:first-child {
+  font-size: 0.72rem;
   font-weight: 700;
+}
+.power__pilot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #5b1d14;
+  box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.6);
+}
+.power--on .power__pilot {
+  background: #ff5a2b;
+  box-shadow: 0 0 8px 2px rgba(255, 90, 43, 0.8);
 }
 
 /* footer */

@@ -30,6 +30,41 @@
       "detectStories": true
     },
     {
+      "id": "UCRVSCAEXnJsDOn3yPQo3gPA",
+      "handle": "@uma-italianoftheeast",
+      "label": {
+        "en": "Aria Amruth Telugu Stories",
+        "te": "ఆరియా అమృత్ తెలుగు కథలు"
+      },
+      "mode": "stories",
+      "language": "te",
+      "lockMode": true,
+      "detectStories": false,
+      "rules": {
+        "minSeconds": 30,
+        "maxSeconds": 10800
+      },
+      "_note": "Amma's Telugu stories channel: every non-Short upload → Telugu Stories (never Songs)."
+    },
+    {
+      "id": "UCQKMrYMfL82ZV2XNAM9IkAw",
+      "handle": "@AriaAmruth-EnglishSongs",
+      "label": {
+        "en": "Aria Amruth English Stories",
+        "te": "ఆరియా అమృత్ ఇంగ్లీష్ కథలు"
+      },
+      "mode": "stories",
+      "language": "auto",
+      "defaultLanguage": "en",
+      "languages": ["en", "es", "fr"],
+      "lockMode": true,
+      "fallbackFor": ["es", "fr"],
+      "rules": {
+        "maxSeconds": 10800
+      },
+      "_note": "Amma's English channel: uploads → English Stories, or Spanish/French Stories when the title clearly says so. Spanish/French Stories play this channel while they have nothing of their own."
+    },
+    {
       "id": "{{CHANNEL_ID_2}}",
       "handle": "{{CH2_HANDLE}}",
       "label": {

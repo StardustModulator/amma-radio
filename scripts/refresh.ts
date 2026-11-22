@@ -12,7 +12,14 @@ import {
   HOUR,
   stationIncludes,
 } from '../src/lib/schedule';
-import type { CatalogItem, Rules, ScheduleFile, StateFile } from '../src/lib/types';
+import type {
+  CatalogItem,
+  ChannelConfig,
+  Rules,
+  ScheduleFile,
+  StateFile,
+  StationConfig,
+} from '../src/lib/types';
 import { loadAll, paths, writeJson, writeScheduleFile } from './io';
 import {
   apiGetVideos,
@@ -74,6 +81,11 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
     log(`::warning::${m}`);
   };
   const checkedThisRun = new Set<string>();
+  // Per-channel length limits (e.g. 50-minute stories) on top of the global rules.
+  const rulesFor = (channelId: string | undefined): Rules => {
+    const ch = config.channels.find((c) => c.id === channelId);
+    return ch?.rules ? { ...rules, ...ch.rules } : rules;
+  };
 
   const upsert = (item: CatalogItem) => {
     const prev = byId.get(item.id);
@@ -91,7 +103,7 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
       if (prev && prev.reason !== 'short' && prev.eligible) probe = 'not_short';
       else if (rules.probeShortsUrl) probe = await probeShort(deps.fetch, v.id);
     }
-    const reason = classify(v, rules, probe);
+    const reason = classify(v, rulesFor(v.channelId || channelId), probe);
     upsert({
       id: v.id,
       channelId: v.channelId || channelId,
@@ -200,7 +212,7 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
           privacyStatus: embed === 'gone' ? 'private' : 'public',
           liveBroadcastContent: live ? 'live' : 'none',
         },
-        rules,
+        rulesFor(ch.id),
         shortIds.has(v.id) ? 'short' : 'not_short', // the Videos tab never lists Shorts
       );
       upsert({
@@ -296,7 +308,7 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
           privacyStatus: embed === 'gone' ? 'private' : 'public',
           liveBroadcastContent: live ? 'live' : 'none',
         },
-        rules,
+        rulesFor(v.channelId),
         probe,
       );
       upsert({
@@ -400,7 +412,10 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
     stations: {},
     fallbackOrder: {},
   };
-  for (const st of stations) {
+  for (const st0 of stations) {
+    const st = withChannelFallback(st0, allItems, channels);
+    if (st !== st0)
+      log(`[schedule] ${st.id}: nothing of its own yet → plays ${String(st.channels)}`);
     const prevSlots = schedule.stations[st.id]?.slots ?? [];
     const prevState = state.stations[st.id] ?? emptyState();
     const built = buildSchedule(st, allItems, prevSlots, prevState, deps.now, rules);
@@ -430,6 +445,27 @@ export async function refresh(deps: RefreshDeps): Promise<RefreshResult> {
       `+${result.added.length} new, ${result.changed.length} changed`,
   );
   return result;
+}
+
+/**
+ * A mode+language station (not a mood sub-station) that has no eligible videos of its own
+ * plays the uploads of channels that declare `fallbackFor: [lang]` for that mode.
+ * Returns the station unchanged when it has its own content or no channel covers it.
+ */
+export function withChannelFallback(
+  st: StationConfig,
+  items: readonly CatalogItem[],
+  channels: readonly ChannelConfig[],
+): StationConfig {
+  if (st.mood || !st.lang || !st.mode) return st;
+  if (items.some((c) => c.eligible && stationIncludes(st, c))) return st;
+  const lang = st.lang;
+  const ids = channels
+    .filter((c) => (c.mode ?? 'songs') === st.mode && c.fallbackFor?.includes(lang))
+    .map((c) => c.id);
+  if (!ids.length) return st;
+  const fb: StationConfig = { ...st, channels: ids, lang: undefined };
+  return items.some((c) => c.eligible && stationIncludes(fb, c)) ? fb : st;
 }
 
 // CLI entry

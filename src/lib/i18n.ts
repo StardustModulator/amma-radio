@@ -43,6 +43,10 @@ const en = {
   comingSoon: 'Coming soon',
   comingSoonBody: 'Amma is preparing this station. Try another language or mode meanwhile.',
   languageKnob: 'LANGUAGE',
+  tuningKnob: 'TUNING',
+  prevStation: 'Previous station',
+  nextStation: 'Next station',
+  fallbackStation: 'Playing Amma’s English stories until this language has its own',
   band: 'BAND',
 } as const;
 
@@ -91,6 +95,10 @@ const te: Record<I18nKey, string> = {
   comingSoon: 'త్వరలో',
   comingSoonBody: 'అమ్మ ఈ స్టేషన్‌ను సిద్ధం చేస్తున్నారు. ఈలోగా మరో భాష లేదా విభాగం ప్రయత్నించండి.',
   languageKnob: 'భాష',
+  tuningKnob: 'ట్యూనింగ్',
+  prevStation: 'మునుపటి స్టేషన్',
+  nextStation: 'తదుపరి స్టేషన్',
+  fallbackStation: 'ఈ భాష కథలు వచ్చే వరకు అమ్మ ఇంగ్లీష్ కథలు వినిపిస్తున్నాం',
   band: 'బ్యాండ్',
 };
 

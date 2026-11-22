@@ -60,10 +60,34 @@ The radio face has two big keys, **పాటలు SONGS** (_with heartful music
 row of push-buttons for **తెలుగు · हिन्दी · English · Español · Français**. In Stories there's also a
 mood row: **అన్నీ All · భావోద్వేగ Emotional · భయానక Fearful/Horror · హృదయాన్ని తాకే Heart-touching**.
 
-Every combination is its own synced station with its own schedule and dial position
-(Telugu 88.6 · Hindi 93.2 · English 97.8 · Spanish 102.4 · French 107.0 MHz; story moods sit just
-above their language). Stations with nothing yet show **త్వరలో · Coming soon** instead of breaking;
-a small grey dot on a button means "coming soon", green means "on air".
+Every combination is its own synced station with its own schedule, all on **one shared dial** like a
+real set: the **SONGS band** on the left (Telugu 88.6 · Hindi 90.4 · English 92.2 · Spanish 94.0 ·
+French 95.8 MHz) and the **STORIES band** on the right (98.2 · 100.0 · 101.8 · 103.6 · 105.4 MHz; story
+moods sit +0.4/+0.8/+1.2 MHz above their language). Stations with nothing yet show
+**త్వరలో · Coming soon** instead of breaking; a small grey dot on a button means "coming soon",
+green means "on air".
+
+### 📻 Changing station
+
+- **◀ / ▶** beside the frequency window, the **TUNING** knob, the **← / →** keys, or the phone's
+  next/previous media buttons step through every station across both bands in dial order
+  (empty stations are skipped). Tapping a marker on the dial glass tunes straight to it.
+- Each change plays a short burst of tuning static (follows the VOLUME knob; silent when the set is off)
+  and the needle sweeps across the glass. The SONGS/STORIES keys and language buttons always follow the dial.
+- **POWER** is the big button on the top rail.
+
+### 📖 Amma's story channels
+
+| Channel                                                                      | ID                         | Goes to                                                                                                                                                                   |
+| ---------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [@ariaamruthsongs](https://www.youtube.com/@ariaamruthsongs)                 | `UC6ygpyydpFHCJK_KiXRUVNQ` | Songs (language from the title)                                                                                                                                           |
+| [@uma-italianoftheeast](https://www.youtube.com/@uma-italianoftheeast)       | `UCRVSCAEXnJsDOn3yPQo3gPA` | **Telugu Stories** — every non-Short upload, never Songs (`lockMode`)                                                                                                     |
+| [@AriaAmruth-EnglishSongs](https://www.youtube.com/@AriaAmruth-EnglishSongs) | `UCQKMrYMfL82ZV2XNAM9IkAw` | **English Stories**; Spanish/French Stories when the title clearly says so. Spanish/French Stories play this channel while they have nothing of their own (`fallbackFor`) |
+
+Channel options in `config/stations.json`: `mode`, `language` (or `auto`), `defaultLanguage`,
+`languages` (allowed languages for `auto`), `lockMode` (playlists/title clues can't move it to the other
+mode), `fallbackFor` (languages whose empty station borrows this channel), and `rules`
+(`minSeconds`/`maxSeconds` per channel — the story channels allow up to 3 hours). Shorts are always left out.
 
 ### ✅ Recommended: sort with YouTube playlists
 
@@ -90,6 +114,8 @@ Add each playlist to `config/stations.json` once:
 
 ### How a video is sorted (first match wins)
 
+0. **Locked channel** (`lockMode: true`): its `mode` (and fixed `language`) always win, except for
+   a manual override.
 1. **Manual override** in [`config/classification-overrides.json`](config/classification-overrides.json):
    `"VIDEO_ID": { "mode": "stories", "language": "en", "moods": ["emotional"] }`
 2. **Playlist** it's in (above).
