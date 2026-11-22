@@ -9,7 +9,7 @@ same song at the same second, it loops forever, and **new uploads join automatic
 
 **Live:** https://stardustmodulator.github.io/amma-radio/
 
-![screenshot](docs/screenshot.png)
+![screenshot](docs/screenshot-songs-stories.png)
 
 ---
 
@@ -36,23 +36,96 @@ Anything still written as `{{…}}` is treated as "not filled in" and ignored, s
 Open the channel → **About** → **Share channel** → **Copy channel ID** (starts with `UC`, 24 characters).
 Or view the page source of `https://www.youtube.com/@handle` and search for `"channelId"`.
 
-### Adding a channel (and its own station on the dial)
+### Adding another channel
 
 ```jsonc
 "channels": [
-  { "id": "UC6ygpyydpFHCJK_KiXRUVNQ", "handle": "@ariaamruthsongs", "label": { "en": "AriaAmruth Songs", "te": "ఆరియా అమృత్ పాటలు" } },
-  { "id": "UCxxxxxxxxxxxxxxxxxxxxxx", "handle": "@her-second-channel", "label": { "en": "Stories", "te": "కథలు" } }
-],
-"stations": [
-  { "id": "all", "freq": "88.5",  "label": { "en": "All Songs", "te": "అన్ని పాటలు" }, "channels": "*" },
-  { "id": "ch1", "freq": "94.3",  "label": { "en": "AriaAmruth Songs", "te": "ఆరియా అమృత్ పాటలు" }, "channels": ["UC6ygpyydpFHCJK_KiXRUVNQ"] },
-  { "id": "ch2", "freq": "101.7", "label": { "en": "Stories", "te": "కథలు" }, "channels": ["UCxxxxxxxxxxxxxxxxxxxxxx"] }
+  { "id": "UC6ygpyydpFHCJK_KiXRUVNQ", "handle": "@ariaamruthsongs", "label": { "en": "AriaAmruth Songs", "te": "ఆరియా అమృత్ పాటలు" },
+    "mode": "songs", "language": "auto", "defaultLanguage": "te", "detectStories": true },
+  { "id": "UCxxxxxxxxxxxxxxxxxxxxxx", "handle": "@her-story-channel", "label": { "en": "Amma's Stories", "te": "అమ్మ కథలు" },
+    "mode": "stories", "language": "auto", "defaultLanguage": "te" }
 ]
 ```
 
-`freq` is where the station sits on the dial (88–108). "All Songs" (`"*"`) mixes every channel.
+- `mode`: what the channel's uploads are by default (`songs` or `stories`).
+- `language`: `te`, `hi`, `en`, `es`, `fr`, or `auto` (guess from each title).
+- `defaultLanguage`: used by `auto` when a title gives no clue.
+- `detectStories`: titles containing story / కథ / कहानी / historia / histoire go to Stories.
 
 ---
+
+## 🎵 Songs & 📖 Stories, in five languages
+
+The radio face has two big keys, **పాటలు SONGS** (_with heartful music_) and **కథలు STORIES**, and a
+row of push-buttons for **తెలుగు · हिन्दी · English · Español · Français**. In Stories there's also a
+mood row: **అన్నీ All · భావోద్వేగ Emotional · భయానక Fearful/Horror · హృదయాన్ని తాకే Heart-touching**.
+
+Every combination is its own synced station with its own schedule, all on **one shared dial** like a
+real set: the **SONGS band** on the left (Telugu 88.6 · Hindi 90.4 · English 92.2 · Spanish 94.0 ·
+French 95.8 MHz) and the **STORIES band** on the right (98.2 · 100.0 · 101.8 · 103.6 · 105.4 MHz; story
+moods sit +0.4/+0.8/+1.2 MHz above their language). Stations with nothing yet show
+**త్వరలో · Coming soon** instead of breaking; a small grey dot on a button means "coming soon",
+green means "on air".
+
+### 📻 Changing station
+
+- **◀ / ▶** beside the frequency window, the **TUNING** knob, the **← / →** keys, or the phone's
+  next/previous media buttons step through every station across both bands in dial order
+  (empty stations are skipped). Tapping a marker on the dial glass tunes straight to it.
+- Each change plays a short burst of tuning static (follows the VOLUME knob; silent when the set is off)
+  and the needle sweeps across the glass. The SONGS/STORIES keys and language buttons always follow the dial.
+- **POWER** is the big button on the top rail.
+
+### 📖 Amma's story channels
+
+| Channel                                                                      | ID                         | Goes to                                                                                                                                                                   |
+| ---------------------------------------------------------------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [@ariaamruthsongs](https://www.youtube.com/@ariaamruthsongs)                 | `UC6ygpyydpFHCJK_KiXRUVNQ` | Songs (language from the title)                                                                                                                                           |
+| [@uma-italianoftheeast](https://www.youtube.com/@uma-italianoftheeast)       | `UCRVSCAEXnJsDOn3yPQo3gPA` | **Telugu Stories** — every non-Short upload, never Songs (`lockMode`)                                                                                                     |
+| [@AriaAmruth-EnglishSongs](https://www.youtube.com/@AriaAmruth-EnglishSongs) | `UCQKMrYMfL82ZV2XNAM9IkAw` | **English Stories**; Spanish/French Stories when the title clearly says so. Spanish/French Stories play this channel while they have nothing of their own (`fallbackFor`) |
+
+Channel options in `config/stations.json`: `mode`, `language` (or `auto`), `defaultLanguage`,
+`languages` (allowed languages for `auto`), `lockMode` (playlists/title clues can't move it to the other
+mode), `fallbackFor` (languages whose empty station borrows this channel), and `rules`
+(`minSeconds`/`maxSeconds` per channel — the story channels allow up to 3 hours). Shorts are always left out.
+
+### ✅ Recommended: sort with YouTube playlists
+
+The cleanest way for Amma to sort her work is **one YouTube playlist per shelf**, e.g.
+_Telugu Songs_, _Hindi Songs_, _Telugu Stories_, _Telugu Horror Stories_, _English Stories_…
+Add each playlist to `config/stations.json` once:
+
+```jsonc
+"playlists": [
+  { "id": "PLxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "label": { "en": "Telugu Stories", "te": "తెలుగు కథలు" },
+    "mode": "stories", "language": "te", "moods": [] },
+  { "id": "PLyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy", "label": { "en": "Telugu Horror Stories", "te": "తెలుగు భయానక కథలు" },
+    "mode": "stories", "language": "te", "moods": ["fearful"] },
+  { "id": "PLzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz", "label": { "en": "Hindi Songs", "te": "హిందీ పాటలు" },
+    "mode": "songs", "language": "hi" }
+]
+```
+
+- The playlist ID is the `list=` part of the playlist's URL (starts with `PL`).
+- From then on she just **adds a video to the right playlist in YouTube Studio**; the hourly job re-reads
+  every playlist and the video joins that station automatically (removing it from the playlist takes it out).
+- Playlists can be public or unlisted, but the videos themselves must be public and embeddable.
+- `moods` can be any of `emotional`, `fearful`, `heart-touching`.
+
+### How a video is sorted (first match wins)
+
+0. **Locked channel** (`lockMode: true`): its `mode` (and fixed `language`) always win, except for
+   a manual override.
+1. **Manual override** in [`config/classification-overrides.json`](config/classification-overrides.json):
+   `"VIDEO_ID": { "mode": "stories", "language": "en", "moods": ["emotional"] }`
+2. **Playlist** it's in (above).
+3. **Title clues**: the words Telugu/Hindi/English/Spanish/French, then the script (Telugu script → Telugu,
+   Devanagari → Hindi, ñ/¿ → Spanish, ç/œ → French), then "all common English words" → English.
+   Story words (story, కథ, कहानी…) → Stories; mood words (horror, దెయ్యం, emotional, heart touching…) → moods.
+4. **Channel defaults** (`mode`, `defaultLanguage`).
+
+Every decision is written to `data/catalog.json` (`mode`, `lang`, `moods`, and `why`), so you can see why a
+song landed where it did and fix it with an override.
 
 ## How new songs get in (two modes)
 
@@ -146,6 +219,8 @@ time ─────────────────────────
 
 | Symptom                                           | Check                                                                                                                                                         |
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Song is in the wrong language / mode              | `data/catalog.json` → its `why`; add a line to `config/classification-overrides.json`.                                                                        |
+| A station says "Coming soon / త్వరలో"               | Nothing is sorted into that mode + language (+ mood) yet. Add a playlist or an override.                                                                      |
 | New song not appearing                            | Actions → latest run log. Then `data/catalog.json` → find the ID → `reason` (`short`, `too_short`, `not_embeddable`, `private`, `live`, `denied`, `removed`). |
 | A real song ≤ 3 min is missing                    | Add its ID to `rules.allowVideoIds`.                                                                                                                          |
 | "yt-dlp listing failed" warnings                  | Add the `YOUTUBE_API_KEY` secret (above).                                                                                                                     |

@@ -1,9 +1,21 @@
 import { hashString, seededShuffle } from './shuffle';
-import type { Rules, Slot, StationConfig, StationState, VideoId } from './types';
+import type {
+  LangCode,
+  Mode,
+  Mood,
+  Rules,
+  Slot,
+  StationConfig,
+  StationState,
+  VideoId,
+} from './types';
 
 export interface ScheduleInput {
   id: VideoId;
   channelId: string;
+  mode?: Mode;
+  lang?: LangCode;
+  moods?: Mood[];
   durationSec: number;
   publishedAt: string;
   firstSeenAt: string;
@@ -17,8 +29,15 @@ export const DAY = 86_400_000;
 
 export const emptyState = (): StationState => ({ cycleIndex: 0, remaining: [], aired: [] });
 
-export function stationIncludes(station: StationConfig, channelId: string): boolean {
-  return station.channels === '*' || station.channels.includes(channelId);
+type StationItem = Pick<ScheduleInput, 'channelId' | 'mode' | 'lang' | 'moods'>;
+
+/** Does this video belong on this station? (mode/language/mood stations, or legacy channel filter) */
+export function stationIncludes(station: StationConfig, item: StationItem): boolean {
+  if (station.channels !== '*' && !station.channels.includes(item.channelId)) return false;
+  if (station.mode && (item.mode ?? 'songs') !== station.mode) return false;
+  if (station.lang && item.lang !== station.lang) return false;
+  if (station.mood && !(item.moods ?? []).includes(station.mood)) return false;
+  return true;
 }
 
 export const slotEnd = (s: Slot): number => s.start + s.dur * 1000;
@@ -59,7 +78,7 @@ export function buildSchedule(
     remaining: [...prevState.remaining],
     aired: [...prevState.aired],
   };
-  const eligible = catalog.filter((v) => v.eligible && stationIncludes(station, v.channelId));
+  const eligible = catalog.filter((v) => v.eligible && stationIncludes(station, v));
   const byId = new Map(eligible.map((v) => [v.id, v]));
   const historyFrom = now - HOUR;
 

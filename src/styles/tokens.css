@@ -14,8 +14,8 @@
   --ink-soft: #4a3424;
   --vu: 0;
   --font-deco: 'Limelight', 'Georgia', serif;
-  --font-te-display: 'Ramabhadra', 'Noto Sans Telugu', sans-serif;
-  --font-te: 'Mandali', 'Noto Sans Telugu', sans-serif;
+  --font-te-display: 'Ramabhadra', 'Noto Sans Telugu', 'Noto Sans Devanagari', sans-serif;
+  --font-te: 'Mandali', 'Noto Sans Telugu', 'Noto Sans Devanagari', sans-serif;
   --font-mono: 'Courier Prime', 'Courier New', monospace;
   --radius: 22px;
   --focus: 0 0 0 3px var(--brass-light), 0 0 0 5px var(--ink);
