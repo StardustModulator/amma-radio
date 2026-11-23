@@ -3,65 +3,65 @@
   "epoch": 1767225600000,
   "stations": {
     "songs-te": {
-      "cycleIndex": 21,
+      "cycleIndex": 24,
       "remaining": [
-        "NLtGwJcRX2E",
-        "wyqWDa21acg",
-        "MFfhIWAdU78",
-        "ac6Vkk4D5Bw",
-        "pMf_KJAT0mc",
-        "0lo9XJL_l7k",
-        "0kzf3Cm7lDU",
-        "ufIdqIK1Tx4",
-        "3iLjR62K4Z0",
-        "zzHzZfTPq5Y",
-        "a6ZvJx2yTbc",
-        "gDRmOIyG6pk",
-        "7PgHI0Tzapc",
-        "azp7g7ouwiY",
         "Ph8f5MwcEX0",
-        "g5U_g4W0gfU",
-        "u-cN0ICxRO4",
-        "cs8WXW6t7SA",
-        "kF4pd2pb_so",
-        "nBoOHVcL9ik",
-        "ZF0-TF7iN-0",
-        "QXwso3nUAj4",
-        "bOejmlXxKnk",
+        "oDHDqY-nFBE",
         "dMaBhNTFnBM",
-        "7HdPLEWPqME",
-        "E1gB3u0YKyE",
+        "ac6Vkk4D5Bw",
+        "ZF0-TF7iN-0",
+        "UZL2Dl7DrB4",
+        "g5U_g4W0gfU",
+        "cs8WXW6t7SA",
+        "QXwso3nUAj4",
+        "tGP_XQ1Fl0I",
+        "a6ZvJx2yTbc",
         "vCDiwk2TNKA",
-        "zimtKNF50e0",
+        "t8MzXo9ZX4M",
+        "0kzf3Cm7lDU",
+        "_IJeznovQAc",
+        "MFfhIWAdU78",
+        "7hd86YqRk8I",
+        "0lo9XJL_l7k",
         "aTJAuYKoasA",
+        "nBoOHVcL9ik",
+        "kF4pd2pb_so",
+        "SMiCyFyJ0sw",
+        "zzHzZfTPq5Y",
+        "wyqWDa21acg",
+        "E1gB3u0YKyE",
+        "bOejmlXxKnk",
+        "u-cN0ICxRO4",
+        "ufIdqIK1Tx4",
+        "7PgHI0Tzapc",
+        "Zz8dq1fV3Co",
+        "ehy6Ge-5XbA",
+        "NLtGwJcRX2E",
+        "azp7g7ouwiY",
+        "gDRmOIyG6pk",
+        "zimtKNF50e0",
+        "3iLjR62K4Z0",
+        "Ycjc8tLUa74",
+        "7HdPLEWPqME",
         "MBSRmUoXzw8"
       ],
       "aired": [
-        "ehy6Ge-5XbA",
-        "_IJeznovQAc",
-        "Ycjc8tLUa74",
-        "oDHDqY-nFBE",
-        "tGP_XQ1Fl0I",
-        "7hd86YqRk8I",
-        "SMiCyFyJ0sw",
-        "t8MzXo9ZX4M",
-        "Zz8dq1fV3Co",
-        "UZL2Dl7DrB4"
+        "pMf_KJAT0mc"
       ]
     },
     "songs-hi": {
-      "cycleIndex": 309,
+      "cycleIndex": 352,
       "remaining": [
-        "KHYcQiL9OYY",
-        "ck325dM7XUw"
+        "N4ACSVsMS6w",
+        "ck325dM7XUw",
+        "KHYcQiL9OYY"
       ],
       "aired": [
-        "N4ACSVsMS6w",
         "5TaJQpBEdiQ"
       ]
     },
     "songs-en": {
-      "cycleIndex": 564,
+      "cycleIndex": 642,
       "remaining": [
         "yFLyRXI2z2k"
       ],
@@ -80,12 +80,13 @@
       "aired": []
     },
     "stories-te": {
-      "cycleIndex": 72,
-      "remaining": [],
+      "cycleIndex": 82,
+      "remaining": [
+        "KXoX325bbu4"
+      ],
       "aired": [
-        "06AU69Kan8Y",
         "gci0lCNK-Fg",
-        "KXoX325bbu4",
+        "06AU69Kan8Y",
         "mq18sEi9Ygc",
         "jzjAz_P2pHU"
       ]
@@ -126,7 +127,7 @@
       "aired": []
     },
     "stories-en": {
-      "cycleIndex": 1751,
+      "cycleIndex": 1994,
       "remaining": [],
       "aired": [
         "d1MjIkkfY6I"
@@ -148,7 +149,7 @@
       "aired": []
     },
     "stories-es": {
-      "cycleIndex": 1751,
+      "cycleIndex": 1994,
       "remaining": [],
       "aired": [
         "d1MjIkkfY6I"
@@ -170,7 +171,7 @@
       "aired": []
     },
     "stories-fr": {
-      "cycleIndex": 1751,
+      "cycleIndex": 1994,
       "remaining": [],
       "aired": [
         "d1MjIkkfY6I"
